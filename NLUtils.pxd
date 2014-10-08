@@ -27,7 +27,7 @@ cdef extern from "netlink/cli/link.h":
     rtnl_link * nl_cli_link_alloc()
     nl_cache * nl_cli_link_alloc_cache_family(nl_sock *, int)
     void nl_cli_link_parse_name(rtnl_link *, char *)
-
+    void nl_cli_link_parse_ifindex(rtnl_link *, char *)
 
 cdef extern from "netlink/cli/route.h":
     rtnl_route * nl_cli_route_alloc()
@@ -50,6 +50,7 @@ cdef extern from "netlink/cli/addr.h":
 cdef extern from "netlink/route/link.h":
     int rtnl_link_get_family(rtnl_link *)
     void rtnl_link_put(rtnl_link *)
+    int rtnl_link_alloc_cache (nl_sock * sock, int family, nl_cache ** result)
 
 cdef extern from "netlink/route/route.h":
     int rtnl_route_add(nl_sock * sock, rtnl_route * route, int flags)

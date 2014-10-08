@@ -24,6 +24,11 @@ from libc.stdlib cimport free
 from libc.string cimport memset
 import cython
 
+    
+ADDRESS_CACHE = "route/addr"
+LINK_CACHE = "route/link"
+ROUTE_CACHE = "route/route"
+
 # TODO:
 # - add table support
 # - fix bug for removing default route
@@ -35,6 +40,8 @@ NETLINK_ROUTE =  0
 NL_AUTO_PROVIDE = 1
 
 NL_DUMP_LINE = 0
+
+AF_UNSPEC = 0
 
 
 cdef void delete_route_cb(nl_object * obj, void * arg):
@@ -86,6 +93,7 @@ cdef class CacheManager:
     """
     
     """
+
     cdef nl_sock * sock
     cdef nl_cache_mngr * manager
     
@@ -95,21 +103,26 @@ cdef class CacheManager:
         if self.sock is NULL:
             raise MemoryError()
 
-        err = nl_connect(self.sock, NETLINK_ROUTE)
+        err = nl_cache_mngr_alloc(self.sock, NETLINK_ROUTE, 0, &self.manager)       
         
         if err < 0:
-            print 
-            raise RuntimeError("Unable to connect netlink socket: %s" % nl_geterror(err))      
-        
-        print nl_cache_mngr_alloc(self.sock, NETLINK_ROUTE, 0, NULL)       
-
+            raise RuntimeError("Unable to connect netlink socket: %s" % nl_geterror(err))  
+            
+             
     def get_fd(self):
         if self.manager is not NULL:
             return nl_cache_mngr_get_fd(self.manager)
         else:
             return None
     
-    
+    def add_cache(self, name):
+        cdef nl_cache *result
+        err = nl_cache_mngr_add(self.manager, name, <void*>0, <void*>0, &result)      
+        if err < 0:
+            raise RuntimeError("Unable to add cache %s: %s" % (name, nl_geterror(err))) 
+        else:
+            print "Added Cache: %s" % name 
+               
     def __poll(self, timeout):
         if self.manager is not NULL:
             return nl_cache_mngr_poll(self.manager, timeout)
@@ -123,7 +136,6 @@ cdef class CacheManager:
             return None
             
     def __dealloc__(self):
-        print "Dealloc"
         if self.sock is not NULL:
             nl_close(self.sock)
             nl_socket_free(self.sock)
@@ -476,7 +488,7 @@ cdef class Link:
         self.__link = nl_cli_link_alloc()
         if self.__link is NULL:
             raise MemoryError()
-
+        
         self.link_cache = nl_cli_link_alloc_cache_family(self.sock,
                                                          rtnl_link_get_family(self.__link))
 
@@ -508,7 +520,7 @@ cdef class Link:
                              &self.params, 
                              <nl_object *>self.__link)
         try:
-            return self.buff.split()[2]
+            return self.buff#.split()[2]
         except AttributeError, IndexError:
             return ""
 

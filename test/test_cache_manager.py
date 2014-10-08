@@ -1,5 +1,8 @@
 from Routing import CacheManager
+import Routing
 
 c = CacheManager()
 
-c.get_fd()
+print "FD: " + str(c.get_fd())
+
+c.add_cache(Routing.ADDRESS_CACHE)
