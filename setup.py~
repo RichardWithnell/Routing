@@ -12,7 +12,7 @@ def pkgconfig(*packages, **kw):
 ext_modules=[
     Extension("Routing",
         ["Routing.pyx", "NLTypes.pxd", "NLUtils.pxd"], 
-        **pkgconfig("libnl-3.0 libnl-route-3.0 libnl-cli-3.0"))  # Unix-like specific
+        **pkgconfig("libnl-3.0 libnl-route-3.0"))  # Unix-like specific
     ]
 
 setup(

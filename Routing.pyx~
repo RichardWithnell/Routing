@@ -109,7 +109,6 @@ cdef class CacheManager:
         else:
             return None
     
-    
     def __poll(self, timeout):
         if self.manager is not NULL:
             return nl_cache_mngr_poll(self.manager, timeout)
