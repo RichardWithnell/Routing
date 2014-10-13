@@ -63,6 +63,11 @@ cdef extern from "netlink/route/addr.h":
     int rtnl_addr_add(nl_sock * sock, rtnl_addr * addr, int flags)
     int rtnl_addr_delete(nl_sock * sock, rtnl_addr * addr, int flags)
     void rtnl_addr_put(rtnl_addr *)
+    int rtnl_addr_get_scope(rtnl_addr *)
+    char * rtnl_addr_get_label(rtnl_addr *)
+    int rtnl_addr_get_index(rtnl_addr *)
+    int rtnl_addr_get_flags(rtnl_addr *)
+    int rtnl_addr_get_family(rtnl_addr *)
 
 
 cdef extern from "netlink/cache.h":
@@ -82,12 +87,12 @@ cdef extern from "netlink/cache.h":
 
     int nl_cache_mngr_add_cache(nl_cache_mngr * manager,
                                 nl_cache * cache,
-                                void * cb,
+                                void (*cb) (nl_cache *cache, nl_object *obj, int action, void *data),
                                 void * data)
 
     int nl_cache_mngr_add(nl_cache_mngr * 	manager,
                           const char * name,
-                          void * cb,
+                          void (*cb) (nl_cache *cache, nl_object *obj, int action, void *data),
                           void * data,
                           nl_cache ** 	result)
                           

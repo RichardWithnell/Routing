@@ -17,13 +17,15 @@
 
 # Tony Cheneau <tony.cheneau@nist.gov>
 
-from NLTypes cimport nl_sock
+# Richard Withnell - Lancaster University
+
+from NLTypes cimport *
 from NLUtils cimport *
 from libc.stdio cimport stdout
 from libc.stdlib cimport free
 from libc.string cimport memset
 import cython
-
+cimport cython
     
 ADDRESS_CACHE = "route/addr"
 LINK_CACHE = "route/link"
@@ -75,7 +77,6 @@ def need_clean_addr_obj(method_to_decorate):
 
     return wrapper
 
-
 def sync_cache(method_to_decorate):
     def wrapper(self, * args, **kwargs):
         self.__resync_caches()
@@ -88,16 +89,93 @@ def NLException(BaseException):
     def __init__(self, message):
         BaseException.__init__(self, message)    
      
-   
+
+    
+cdef class ManagerData:
+    cdef nl_cache *cache
+    cdef object cb
+    cdef object data
+    cdef char* name
+    
+    def __init__(self, cb, data, name):
+        self.cb = cb
+        self.data = data
+        self.name = name
+
+def Pynl_object(object):
+    def __init__(self):
+        pass
+
+def Pyrt_Route(Pynl_object):
+    
+    def __init__(self):
+        self.address
+        self.name
+        self.index
+        self.flags
+        self.family
+
+def Pyrt_Addr(Pynl_object):
+    
+    def __init__(self):
+        self.address
+        self.broadcast
+        self.netmask
+        self.multicast
+        self.scope
+        self.name
+        self.index
+        self.flags
+        self.family
+
+def Pyrt_Link(Pynl_object):
+
+    def __init__(self):
+        self.address
+        self.name
+        self.index
+        self.flags
+        self.family
+
+cdef Pyrt_Addr __create_pynl_addr(rtnl_addr *addr):
+
+    pyaddr = Pyrt_Addr()
+    pyaddr.address = "192.168.100.1"
+    pyaddr.netmask = "255.255.255.0"
+    pyaddr.broadcast = "192.168.100.255"
+    pyaddr.multicast = "255.255.255.254"
+    pyaddr.scope = <int>rtnl_addr_get_scope(addr)
+    pyaddr.name = <char*>rtnl_addr_get_label(addr)
+    pyaddr.index = <int>rtnl_addr_get_index(addr)
+    pyaddr.flags = <int>rtnl_addr_get_flags(addr)
+    pyaddr.family = <int>rtnl_addr_get_family(addr)
+    
+    return addr
+
+cdef void __cache_cb_wrapper(nl_cache *cache, nl_object *obj, int action, void *data):
+    md = <ManagerData>data
+    if md.name == ROUTE_CACHE:
+        pass
+    elif md.name == ADDRESS_CACHE:
+        pyaddr = __create_pynl_addr(<rtnl_addr*>obj)
+        md.cb({"rtnl_addr":pyaddr, "action": action, "data": md.data})
+    elif md.name == LINK_CACHE:
+        pass
+        
 cdef class CacheManager:
     """
-    
+    Wrapper for the Netlink Cache Manager
+    TODO: the callback wrapper is a bit of a hack, figure out how to do this properly. 
+          potentially use decorator?
     """
 
     cdef nl_sock * sock
     cdef nl_cache_mngr * manager
-    
+    cdef list md_list # keeping the references to the data
+
+                
     def __cinit__(self):
+        self.md_list = []
         self.sock = nl_socket_alloc()
 
         if self.sock is NULL:
@@ -107,21 +185,26 @@ cdef class CacheManager:
         
         if err < 0:
             raise RuntimeError("Unable to connect netlink socket: %s" % nl_geterror(err))  
-            
-             
+                                 
     def get_fd(self):
         if self.manager is not NULL:
             return nl_cache_mngr_get_fd(self.manager)
         else:
             return None
-    
-    def add_cache(self, name):
+
+    def add_cache(self, name, callback, data, store_result=True):
         cdef nl_cache *result
-        err = nl_cache_mngr_add(self.manager, name, <void*>0, <void*>0, &result)      
+        md = ManagerData(callback, data, name)
+        if store_result:
+            err = nl_cache_mngr_add(self.manager, name, __cache_cb_wrapper, <void*>md, &result) 
+            md.cache = result
+        else:
+            err = nl_cache_mngr_add(self.manager, name, __cache_cb_wrapper, <void*>md, NULL)               
+        self.md_list.append(md)       
         if err < 0:
             raise RuntimeError("Unable to add cache %s: %s" % (name, nl_geterror(err))) 
         else:
-            print "Added Cache: %s" % name 
+            print "Added Cache: %s" % name
                
     def __poll(self, timeout):
         if self.manager is not NULL:
