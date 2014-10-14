@@ -20,9 +20,27 @@ cimport libc.stdio as stdio
 cdef enum:
     NLM_F_REPLACE = 0x100
     NLM_F_CREATE = 0x400
+    
+cdef extern from "linux/netlink.h":
+    cdef struct nlmsgerr:
+        pass
+    cdef struct sockaddr_nl:
+        pass
 
 cdef extern from "netlink/handlers.h":
     cdef struct nl_sock:
+        pass
+        
+cdef extern from "netlink/cache.h":
+    cdef struct nl_cache_ops:
+        pass
+        
+cdef extern from "netlink/netlink-kernel.h":
+    cdef struct nlattr:
+        pass
+        
+cdef extern from "netlink/msg.h":
+    cdef struct nl_msg:
         pass
 
 cdef extern from "netlink/cache.h":

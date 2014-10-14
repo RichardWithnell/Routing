@@ -17,6 +17,14 @@
 
 from NLTypes cimport *
 
+cdef extern from "netlink/netlink.h":
+    int nla_put_u32(nl_msg *message, int attrtype, int value)
+    int nla_put_u16(nl_msg *message, int attrtype, int value)
+    int nla_put_u8(nl_msg *message, int attrtype, int value)
+    int nla_put_be32(nl_msg *message, int attrtype, int value)
+    int nla_put_be16(nl_msg *message, int attrtype, int value)
+    nlattr * nla_reserve(nl_msg *message, int attrtype, int value)
+    
 cdef extern from "netlink/cli/utils.h":
     nl_cache * nl_cli_alloc_cache(nl_sock * sock, char * cache_type,
                              int (*ac) (nl_sock *, nl_cache **))
@@ -101,10 +109,16 @@ cdef extern from "netlink/cache.h":
 cdef extern from "netlink/netlink.h":
     void nl_close(nl_sock * sock)
     int nl_connect(nl_sock * sock, int module)
+    
+#cdef extern from "netlink/core.h"
+#    int nl_send_auto_complete(nl_sock *sock, nl_msg *message)
+#    void nl_auto_complete(nl_sock *sock, nl_msg *message)
 
 cdef extern from "netlink/socket.h":
     nl_sock * nl_socket_alloc()
     void nl_socket_free(nl_sock * sock)
+    int nl_socket_add_membership(nl_sock *sock, int group)
+    void nl_socket_disable_seq_check(nl_sock *sock)
 
 cdef extern from "netlink/errno.h":
     char * nl_geterror(int error)
